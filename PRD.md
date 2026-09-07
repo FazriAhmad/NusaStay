@@ -1,111 +1,100 @@
-# PRD — Aplikasi Booking Hotel
+# PRD — NusaStay
 
 ## 1. Ringkasan
-Platform booking hotel berbasis web yang memungkinkan pengguna mencari, membandingkan, dan memesan kamar hotel secara online, serta memungkinkan admin mengelola hotel, kamar, booking, dan pengguna.
+Platform booking hotel berbasis web untuk 8 properti kurasi di Indonesia (Bali, Jakarta, Yogyakarta, Lombok, Bandung, Surabaya). Tamu bisa mencari, membandingkan, dan memesan kamar; admin mengelola katalog kamar, ketersediaan, reservasi, promo, dan laporan dari satu panel.
 
-**Target pengguna:** wisatawan/pelancong (customer) dan pengelola platform (admin).
+**Target pengguna:** wisatawan/pelancong (tamu) dan pengelola platform (admin tunggal — bukan multi-tenant).
 
-**Stack rekomendasi:** Laravel (backend/API) + Next.js (frontend), PostgreSQL, Sanctum untuk auth, Midtrans/Xendit untuk pembayaran.
+**Stack aktual:**
+- Backend: Laravel + Sanctum (token auth) + PostgreSQL
+- Frontend: React + TypeScript + Vite + React Router + Tailwind CSS
+- Pembayaran: **simulasi** — tidak ada integrasi payment gateway (Midtrans/Xendit dll). Tamu memilih metode (QRIS/VA/kartu/transfer) lalu status langsung `paid`/`unpaid`; admin bisa verifikasi manual.
 
 ---
 
-## 2. Fitur Customer
+## 2. Fitur Tamu
 
-### 2.1 Registrasi & Login
-| Fitur | Deskripsi | Prioritas |
-|---|---|---|
-| Daftar akun | Registrasi via email + password, verifikasi email | Must |
-| Login/logout | Autentikasi session/token (Sanctum) | Must |
-| Lupa password | Reset via link email, token expired dalam 60 menit | Must |
-| Login Google | OAuth2 Google (Socialite) | Should |
+### 2.1 Akun
+- Daftar, login/logout via token Sanctum.
+- Lupa password: `POST /forgot-password` → `POST /reset-password` (built-in Laravel password broker, token sekali pakai).
+- Edit profil (nama, email, telepon) & ganti password.
 
-**Acceptance criteria:**
-- Password minimal 8 karakter, disimpan hash (bcrypt).
-- Email harus unik & terverifikasi sebelum booking pertama.
-- Login gagal 5x berturut-turut → rate limit 1 menit.
+### 2.2 Cari & Jelajah Kamar
+- Filter berdasarkan provinsi, tanggal check-in/out, jumlah tamu.
+- Listing kamar dengan harga, rating, badge diskon (harga coret), featured.
+- Detail kamar: galeri foto, fasilitas, deskripsi, ulasan tamu, kalender ketersediaan 30 hari ke depan (hijau/kuning/merah/diblokir dihitung dari stok riil).
 
-### 2.2 Pencarian Hotel
-- Input: lokasi/nama hotel (autocomplete), tanggal check-in & check-out, jumlah tamu, jumlah kamar.
-- Validasi: check-out > check-in, tanggal tidak boleh di masa lalu.
-- Hasil: daftar hotel yang punya kamar tersedia sesuai rentang tanggal & kapasitas.
+### 2.3 Booking & Checkout
+Alur: pilih tanggal & jumlah kamar → isi data tamu → checkout (kode promo, metode pembayaran) → konfirmasi.
 
-### 2.3 Daftar & Detail Hotel
-Menampilkan: galeri foto, nama & lokasi (peta), rentang harga kamar, daftar fasilitas hotel, rating & ringkasan ulasan, daftar tipe kamar dengan harga & ketersediaan real-time, kebijakan hotel (check-in/out time, cancellation policy, aturan anak/hewan).
+**Aturan bisnis:**
+- Ketersediaan dihitung per-malam dari `total_rooms` dikurangi reservasi aktif dan tanggal yang diblokir admin — dicek ulang di server saat submit untuk mencegah race condition/double-booking.
+- Rincian harga: subtotal (harga × malam × jumlah kamar) − diskon promo + pajak (`tax_percent`) + biaya layanan (`service_fee`), semua dihitung di server, bukan client.
+- Reservasi `unpaid` yang dibiarkan > 30 menit dibatalkan otomatis (command `app:cancel-expired-reservations`), kamar kembali tersedia.
 
-### 2.4 Filter & Sorting
-- Sort: harga termurah/termahal, rating tertinggi, jarak terdekat.
-- Filter: rentang harga, fasilitas (multi-select), tipe kamar, rating minimum.
-- Filter & sort bersifat kombinatif dan ter-refleksi di URL query (agar bisa di-share/bookmark).
+### 2.4 Kode Promo
+- Validasi kode saat checkout: aktif, belum kedaluwarsa, kuota tersisa, memenuhi minimum transaksi.
+- Diskon persen (dengan batas maksimum) atau nominal tetap.
+- Kuota berkurang saat reservasi berhasil dibuat, bukan saat divalidasi.
 
-### 2.5 Booking Kamar
-Alur: pilih tipe & jumlah kamar → isi data tamu (nama, kontak per kamar bila diperlukan) → ringkasan pesanan (rincian harga, pajak, diskon) → input kode promo/voucher → lanjut ke pembayaran.
+### 2.5 Reservasi Saya
+- Tab: Akan Datang / Selesai / Dibatalkan.
+- Tamu bisa: konfirmasi "saya sudah bayar" (untuk metode non-QRIS), batalkan reservasi (hanya di luar cutoff jam sebelum check-in), beri ulasan setelah menginap selesai & lunas.
+- E-tiket per reservasi menampilkan status pembayaran (Lunas/Menunggu/Refund/Gagal) sesuai kondisi terkini — termasuk saat reservasi dibatalkan/di-refund oleh admin.
+- Perubahan dari sisi admin (pembatalan, refund, update kamar) ikut ter-refresh otomatis saat tab tamu aktif kembali.
 
-**Aturan bisnis kunci:**
-- Ketersediaan kamar dikunci (row lock) saat proses booking untuk mencegah double-booking.
-- Reservasi berstatus `pending` dibatalkan otomatis jika pembayaran tidak selesai dalam 30 menit (hold kamar sementara).
-- Kode promo divalidasi: masa berlaku, kuota, syarat minimum transaksi.
+### 2.6 Ulasan
+- Hanya bisa diberikan setelah tanggal check-out lewat & pembayaran lunas.
+- Satu ulasan per reservasi, rating 1-5 + komentar + hingga beberapa foto.
+- Rating rata-rata & jumlah ulasan di kamar ter-update otomatis setiap ada ulasan baru.
 
-### 2.6 Pembayaran
-- Metode: transfer bank (manual/VA), e-wallet (QRIS), virtual account, kartu kredit/debit — via payment gateway (Midtrans/Xendit).
-- Status pembayaran: `pending`, `paid`, `failed`, `expired`.
-- Update status booking otomatis via webhook dari payment gateway.
-
-### 2.7 Booking Saya
-- Tab: booking aktif (upcoming) & riwayat (selesai/dibatalkan).
-- Detail reservasi: info hotel, kamar, tanggal, harga, status pembayaran.
-- Batalkan booking: hanya jika sesuai kebijakan pembatalan hotel (cutoff time), status berubah `cancelled`, proses refund bila applicable.
-- Download/cetak bukti booking (PDF/voucher berisi QR/kode booking).
-
-### 2.8 Review & Rating
-- Hanya customer yang sudah menyelesaikan stay (checkout terlewati & status `completed`) yang bisa memberi rating (1-5) dan ulasan teks.
-- Upload foto pengalaman menginap (maks. 5 foto per ulasan, validasi format & ukuran).
-- Satu ulasan per booking.
+### 2.7 Wishlist
+- Simpan/hapus kamar favorit, tersinkron per akun.
 
 ---
 
 ## 3. Fitur Admin
 
 ### 3.1 Dashboard
-Ringkasan: total hotel, total kamar, total booking, pendapatan (harian/bulanan), daftar booking terbaru (real-time/near real-time).
+Ringkasan revenue (lunas), pembayaran menunggu, okupansi aktif, rating rata-rata, grafik revenue 7 hari terakhir, aktivitas reservasi terbaru.
 
-### 3.2 Manajemen Hotel
-- CRUD hotel: nama, deskripsi, lokasi (alamat + koordinat), foto (multi-upload), fasilitas (checklist master data), kebijakan.
-- Soft delete (hotel yang punya riwayat booking tidak dihapus permanen).
+### 3.2 Manajemen Kamar
+- CRUD kamar: nama, hotel, lokasi, harga (+harga coret opsional), kapasitas, tipe kasur, luas, jumlah unit, status aktif/nonaktif, featured, deskripsi, fasilitas (multi-select), galeri foto (upload ke storage).
 
-### 3.3 Manajemen Kamar
-- CRUD tipe kamar per hotel: nama tipe, harga (bisa musiman), jumlah unit, fasilitas kamar, foto.
-- Kalender ketersediaan per tipe kamar (block/unblock tanggal untuk maintenance).
+### 3.3 Ketersediaan
+- Kalender per kamar: blokir/buka tanggal individual (maintenance, event) — terpisah dari okupansi akibat reservasi.
 
-### 3.4 Manajemen Booking
-- Lihat semua reservasi dengan filter (status, hotel, tanggal, customer).
-- Konfirmasi booking manual (untuk pembayaran transfer manual yang perlu verifikasi).
-- Kelola pembatalan & refund (approve/reject, catat alasan).
+### 3.4 Bookings & Orders
+- Lihat semua reservasi dengan filter status pembayaran/booking.
+- Ubah status pembayaran cepat (unpaid/paid/refunded/failed).
+- Batalkan reservasi (dengan alasan) & kelola permintaan refund (approve/reject) — riwayat tetap tersimpan, bukan hard delete.
+- Restore reservasi yang dibatalkan membersihkan jejak pembatalan sepenuhnya.
 
-### 3.5 Manajemen Pengguna
-- Data customer (lihat, non-aktifkan akun bila fraud/abuse).
-- Akun admin & role (super admin, hotel manager, finance) dengan hak akses berbeda.
+### 3.5 Promo
+- CRUD kode promo: tipe diskon (persen/nominal), batas maksimum diskon, minimum transaksi, kuota, masa berlaku, status aktif.
 
-### 3.6 Laporan
-- Laporan booking (per periode, per hotel, per status).
-- Laporan pendapatan (gross/net setelah komisi & refund).
-- Hotel paling banyak dipesan (leaderboard).
-- Statistik bulanan/tahunan (grafik tren booking & revenue).
-- Export laporan ke CSV/Excel.
+### 3.6 Fasilitas (Amenities)
+- CRUD master data fasilitas kamar (nama + ikon).
+
+### 3.7 Kontak
+- Lihat & tandai pesan dari form kontak publik sebagai sudah dibaca, atau hapus.
+
+### 3.8 Laporan
+- Ringkasan booking & revenue per periode.
+- Export data booking ke CSV.
+
+### 3.9 Pengaturan
+- Nama situs, tagline, kontak, alamat, pajak, biaya layanan, jam check-in/out, mode maintenance, pengumuman.
 
 ---
 
 ## 4. Non-Functional Requirements
-- **Keamanan:** hash password, HTTPS, proteksi CSRF/XSS/SQLi, rate limiting login & booking.
-- **Konsistensi data:** transaksi database (DB transaction + row lock) untuk mencegah race condition saat booking kamar terakhir.
-- **Skalabilitas:** cache untuk hasil pencarian hotel (Redis), queue untuk kirim email/notifikasi.
-- **Auditability:** log perubahan status booking & pembayaran.
+- **Keamanan:** password di-hash (bcrypt via Laravel), token API via Sanctum, validasi request di server untuk semua endpoint tulis.
+- **Konsistensi data:** ketersediaan kamar & harga selalu dihitung ulang di server saat booking dibuat — client tidak pernah jadi sumber kebenaran harga/stok.
+- **Auditability:** setiap pembatalan mencatat siapa yang membatalkan (`user`/`admin`/`system`) dan alasannya.
 
-## 5. Out of Scope (v1)
+## 5. Di Luar Cakupan (saat ini)
+- Integrasi payment gateway sungguhan (Midtrans/Xendit/dll) — pembayaran masih simulasi.
+- Login sosial (Google dll).
+- Multi-hotel/multi-tenant dengan role admin bertingkat (super admin, hotel manager, finance) — sistem saat ini satu admin tunggal.
 - Multi-bahasa & multi-currency.
-- Loyalty/membership program.
-- Chat langsung dengan hotel.
-
-## 6. Metrik Sukses
-- Conversion rate pencarian → booking.
-- Tingkat pembatalan booking.
-- Waktu rata-rata proses booking (search sampai pembayaran selesai).
