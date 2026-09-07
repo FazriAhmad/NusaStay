@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --color-jungle-50: #f2f7f3;
+  --color-jungle-100: #e0ede3;
+  --color-jungle-200: #c2dbc9;
+  --color-jungle-500: #1e7a4c;
+  --color-jungle-600: #166b41;
+  --color-jungle-700: #124f32;
+  --color-jungle-800: #0e3d27;
+  --color-jungle-900: #0a2c1d;
+  --color-jungle-950: #061f14;
+  --color-sand-50: #fdf9f0;
+  --color-sand-100: #f8efdb;
+  --color-sand-200: #f0dfb8;
+  --color-sand-300: #e6c98a;
+  --color-gold-400: #d9a441;
+  --color-gold-500: #c08c2b;
+  --color-gold-600: #9d7020;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-sans); background: #faf8f2; color: #1c2420; -webkit-font-smoothing: antialiased; }
+.font-display { font-family: var(--font-display); }
+
+::selection { background: #166b41; color: #fff; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #f0ece1; }
+::-webkit-scrollbar-thumb { background: #124f32; border-radius: 8px; }
+
+.card-shadow { box-shadow: 0 10px 40px -12px rgba(10,44,29,.18); }
+.glass { backdrop-filter: blur(14px); background: rgba(255,255,255,.82); }
+.hero-grad { background: linear-gradient(180deg, rgba(6,31,20,.62) 0%, rgba(6,31,20,.35) 45%, rgba(6,31,20,.78) 100%); }
+.gold-grad { background: linear-gradient(135deg, #e6c98a 0%, #c08c2b 60%, #9d7020 100%); }
+input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

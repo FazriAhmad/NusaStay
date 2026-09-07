@@ -18,6 +18,7 @@ class AmenityController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:amenities,name'],
+            'icon' => ['nullable', 'string', 'max:50'],
         ]);
 
         $amenity = Amenity::create($data);
@@ -29,6 +30,7 @@ class AmenityController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:amenities,name,' . $amenity->id],
+            'icon' => ['nullable', 'string', 'max:50'],
         ]);
 
         $amenity->update($data);

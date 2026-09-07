@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name'])]
+#[Fillable(['name', 'icon'])]
 class Amenity extends Model
 {
     protected $table = 'amenities';

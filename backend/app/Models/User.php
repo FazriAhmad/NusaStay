@@ -31,6 +31,11 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);

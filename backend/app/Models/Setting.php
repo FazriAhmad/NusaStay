@@ -11,15 +11,21 @@ class Setting extends Model
     public static function defaults(): array
     {
         return [
-            'site_name' => ['value' => 'LuxeStay', 'type' => 'string', 'group' => 'general'],
-            'site_tagline' => ['value' => 'Hospitality Group', 'type' => 'string', 'group' => 'general'],
-            'contact_email' => ['value' => 'hello@luxestay.id', 'type' => 'string', 'group' => 'general'],
-            'contact_phone' => ['value' => '+62 21 1234 5678', 'type' => 'string', 'group' => 'general'],
+            'site_name' => ['value' => 'NusaStay', 'type' => 'string', 'group' => 'general'],
+            'site_tagline' => ['value' => 'Menginap Terbaik di Nusantara', 'type' => 'string', 'group' => 'general'],
+            'contact_email' => ['value' => 'halo@nusastay.id', 'type' => 'string', 'group' => 'general'],
+            'contact_phone' => ['value' => '(021) 5090-2026', 'type' => 'string', 'group' => 'general'],
+            'address' => ['value' => 'SCBD Lot 8, Jl. Jend. Sudirman, Jakarta Selatan', 'type' => 'string', 'group' => 'general'],
+            'announcement' => ['value' => 'Promo HEMAT20: diskon 20% s.d. Rp300rb untuk semua properti hingga Maret 2027!', 'type' => 'string', 'group' => 'general'],
+            'maintenance' => ['value' => '0', 'type' => 'boolean', 'group' => 'general'],
             'currency' => ['value' => 'IDR', 'type' => 'string', 'group' => 'general'],
-            'tax_percent' => ['value' => '12', 'type' => 'integer', 'group' => 'pricing'],
-            'service_fee_percent' => ['value' => '4', 'type' => 'integer', 'group' => 'pricing'],
+            'tax_percent' => ['value' => '10', 'type' => 'integer', 'group' => 'pricing'],
+            'service_fee' => ['value' => '25000', 'type' => 'integer', 'group' => 'pricing'],
+            'check_in_time' => ['value' => '14:00', 'type' => 'string', 'group' => 'booking'],
+            'check_out_time' => ['value' => '12:00', 'type' => 'string', 'group' => 'booking'],
             'min_nights' => ['value' => '1', 'type' => 'integer', 'group' => 'booking'],
             'max_guests_per_room' => ['value' => '6', 'type' => 'integer', 'group' => 'booking'],
+            'cancellation_cutoff_hours' => ['value' => '24', 'type' => 'integer', 'group' => 'booking'],
         ];
     }
 

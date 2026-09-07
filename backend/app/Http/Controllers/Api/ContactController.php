@@ -41,4 +41,22 @@ class ContactController extends Controller
             ],
         ]);
     }
+
+    public function update(Request $request, Contact $contact): JsonResponse
+    {
+        $data = $request->validate([
+            'read' => ['required', 'boolean'],
+        ]);
+
+        $contact->update($data);
+
+        return response()->json(['data' => $contact]);
+    }
+
+    public function destroy(Contact $contact): JsonResponse
+    {
+        $contact->delete();
+
+        return response()->json(['message' => 'Contact deleted']);
+    }
 }

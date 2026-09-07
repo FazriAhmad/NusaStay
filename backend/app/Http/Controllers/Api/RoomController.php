@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BlockedDate;
+use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,7 +44,9 @@ class RoomController extends Controller
 
     public function availability(): JsonResponse
     {
-        $rooms = Room::withCount('reservations')->orderBy('id')->get();
+        $rooms = Room::withCount(['reservations' => function ($q) {
+            $q->whereDoesntHave('payment', fn ($p) => $p->where('status', 'cancelled'));
+        }])->orderBy('id')->get();
         $data = $rooms->map(function (Room $room) {
             $activeBookings = $room->reservations_count;
             return [
@@ -61,14 +65,53 @@ class RoomController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    /** Per-room booked counts per date + blocked dates, so the client can compute availability locally. */
+    public function occupancy(): JsonResponse
+    {
+        $reservations = Reservation::whereDoesntHave('payment', fn ($q) => $q->where('status', 'cancelled'))
+            ->get(['room_id', 'start_date', 'end_date', 'rooms_count']);
+
+        $booked = [];
+        foreach ($reservations as $reservation) {
+            $cursor = $reservation->start_date->copy()->startOfDay();
+            $end = $reservation->end_date->copy()->startOfDay();
+            while ($cursor->lt($end)) {
+                $day = $cursor->toDateString();
+                $booked[$reservation->room_id][$day] = ($booked[$reservation->room_id][$day] ?? 0) + $reservation->rooms_count;
+                $cursor->addDay();
+            }
+        }
+
+        $blocked = BlockedDate::all(['room_id', 'date'])
+            ->groupBy('room_id')
+            ->map(fn ($rows) => $rows->map(fn ($row) => $row->date->toDateString())->values()->all());
+
+        $data = Room::orderBy('id')->get(['id', 'total_rooms'])->map(fn (Room $room) => [
+            'room_id' => $room->id,
+            'total_rooms' => $room->total_rooms,
+            'booked' => (object) ($booked[$room->id] ?? []),
+            'blocked' => $blocked[$room->id] ?? [],
+        ]);
+
+        return response()->json(['data' => $data]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'hotel' => ['nullable', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'image' => ['required', 'string', 'max:500'],
+            'images' => ['nullable'],
             'price' => ['required', 'integer', 'min:0'],
+            'original_price' => ['nullable', 'integer', 'min:0'],
             'capacity' => ['required', 'integer', 'min:1'],
+            'bed' => ['nullable', 'string', 'max:100'],
+            'size' => ['nullable', 'integer', 'min:0'],
+            'total_rooms' => ['nullable', 'integer', 'min:0'],
+            'status' => ['nullable', 'in:active,inactive'],
+            'featured' => ['nullable', 'boolean'],
             'province' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string', 'max:500'],
@@ -96,10 +139,18 @@ class RoomController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'hotel' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string'],
             'image' => ['sometimes', 'required', 'string', 'max:500'],
+            'images' => ['sometimes', 'nullable'],
             'price' => ['sometimes', 'required', 'integer', 'min:0'],
+            'original_price' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'capacity' => ['sometimes', 'required', 'integer', 'min:1'],
+            'bed' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'size' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'total_rooms' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'status' => ['sometimes', 'in:active,inactive'],
+            'featured' => ['sometimes', 'boolean'],
             'province' => ['sometimes', 'nullable', 'string', 'max:100'],
             'city' => ['sometimes', 'nullable', 'string', 'max:100'],
             'address' => ['sometimes', 'nullable', 'string', 'max:500'],
@@ -139,7 +190,7 @@ class RoomController extends Controller
 
         return response()->json([
             'data' => [
-                'url' => Storage::url($path),
+                'url' => url(Storage::url($path)),
                 'path' => $path,
             ],
         ], 201);

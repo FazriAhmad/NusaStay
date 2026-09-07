@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -70,5 +71,51 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json(['user' => $request->user()]);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+
+        Password::sendResetLink($request->only('email'));
+
+        $payload = ['message' => 'Jika email terdaftar, link reset password telah dikirim.'];
+
+        // Local demo only: hand the token back so the reset flow is usable without a mail server.
+        if (app()->environment('local')) {
+            $user = User::where('email', $request->string('email'))->first();
+            if ($user) {
+                $payload['token'] = Password::createToken($user);
+                $payload['email'] = $user->email;
+            }
+        }
+
+        // Generic response regardless of whether the email exists, to avoid account enumeration.
+        return response()->json($payload);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::reset(
+            $data,
+            function (User $user, string $password) {
+                $user->forceFill(['password' => $password])->save();
+                $user->tokens()->delete();
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages([
+                'email' => [__($status)],
+            ]);
+        }
+
+        return response()->json(['message' => 'Password berhasil direset. Silakan login kembali.']);
     }
 }
