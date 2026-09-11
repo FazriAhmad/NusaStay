@@ -208,6 +208,11 @@ class NusaStaySeeder extends Seeder
         $putri = $this->userFor('Putri Ayu', 'putri@mail.com', '0813-9999-0000');
         $james = $this->userFor('James Wong', 'james@mail.com', '+65 9000 1111');
 
+        DB::table('saved_hotels')->insert([
+            ['user_id' => $guest->id, 'room_id' => $roomIds['r1'], 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $guest->id, 'room_id' => $roomIds['r4'], 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
         $seed = [
             ['NS-8K2QXA', 'r1', $guest, -20, -18, 2, 1, 2900000, 300000, 'paid', 'Virtual Account BCA', 'Honeymoon setup'],
             ['NS-P4LM9Z', 'r2', $guest, 5, 7, 2, 1, 1960000, 50000, 'unpaid', 'QRIS', 'Lantai tinggi'],

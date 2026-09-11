@@ -38,7 +38,7 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="font-display text-3xl font-bold text-jungle-950">Dashboard</h1>
-      <p className="text-stone-500 text-sm mt-1">Ringkasan bisnis per hari ini, Senin 7 Sep 2026.</p>
+      <p className="text-stone-500 text-sm mt-1">Ringkasan bisnis per hari ini, {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}.</p>
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-5">
         {cards.map((c, i) => (
           <div key={i} className="bg-white rounded-2xl border border-stone-200/70 card-shadow p-5">

@@ -230,8 +230,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const { user: signedIn, token } = await api.auth.login(email, pass);
       setToken(token);
-      setUser(signedIn);
+      // Load first: setting `user` flips the route guards and mounts the dashboard immediately.
       await loadForUser(signedIn);
+      setUser(signedIn);
       return { ok: true, msg: `Selamat datang kembali, ${signedIn.name.split(' ')[0]}!` };
     } catch (err) {
       return { ok: false, msg: errorMessage(err, 'Gagal masuk. Coba lagi.') };
@@ -242,8 +243,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const { user: created, token } = await api.auth.register(name, email, pass);
       setToken(token);
-      setUser(created);
       await loadForUser(created);
+      setUser(created);
       return { ok: true, msg: 'Akun berhasil dibuat. Selamat bergabung!' };
     } catch (err) {
       return { ok: false, msg: errorMessage(err, 'Pendaftaran gagal. Coba lagi.') };
