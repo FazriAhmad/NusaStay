@@ -20,7 +20,7 @@ class ReservationController extends Controller
     {
         $user = $request->user();
 
-        $query = Reservation::with(['user:id,name,email,phone', 'room:id,name,price,image', 'payment', 'review'])
+        $query = Reservation::with(['user:id,name,email,phone', 'room:id,name,price,image', 'payment', 'review', 'promoCode:id,code'])
             ->orderByDesc('created_at');
 
         if (! $user->isAdmin()) {

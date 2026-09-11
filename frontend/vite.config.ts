@@ -24,6 +24,8 @@ export default defineConfig(async ({ mode }) => {
     envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
     define: processEnvDefines,
     server: {
+      port: 5555,
+      strictPort: true,
       proxy: {
         '/api': { target: backend, changeOrigin: true },
         '/storage': { target: backend, changeOrigin: true },

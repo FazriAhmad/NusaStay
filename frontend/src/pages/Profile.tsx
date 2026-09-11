@@ -3,10 +3,9 @@ import { User as UserIcon, Mail, Phone, Lock, Camera } from 'lucide-react';
 import { useStore } from '../store/AppStore';
 import { PageHead } from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { fileToDataURL } from '../lib/utils';
 
 export default function Profile() {
-  const { user, updateProfile, changePassword, myBookings } = useStore();
+  const { user, updateProfile, uploadAvatar, changePassword, myBookings } = useStore();
   const toast = useToast();
   const [name, setName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
@@ -22,7 +21,7 @@ export default function Profile() {
           <label className="relative inline-block cursor-pointer group">
             {user.avatar ? <img src={user.avatar} alt="" className="w-24 h-24 rounded-full object-cover mx-auto ring-4 ring-gold-400/50" /> : <span className="w-24 h-24 rounded-full gold-grad text-jungle-950 grid place-items-center font-display font-bold text-4xl mx-auto">{user.name.charAt(0).toUpperCase()}</span>}
             <span className="absolute bottom-1 right-1 bg-white text-jungle-900 rounded-full p-1.5 shadow group-hover:scale-110 transition"><Camera size={14} /></span>
-            <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) { updateProfile({ avatar: await fileToDataURL(f) }); toast('Foto profil diperbarui'); } }} />
+            <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) { await uploadAvatar(f); toast('Foto profil diperbarui'); } }} />
           </label>
           <h2 className="font-display font-bold text-xl mt-3">{user.name}</h2>
           <p className="text-white/60 text-sm">{user.email}</p>

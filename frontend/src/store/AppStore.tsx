@@ -24,6 +24,7 @@ type Store = {
   forgot: (email: string) => Promise<Result & { token?: string }>;
   resetPassword: (token: string, pass: string) => Promise<Result>;
   updateProfile: (patch: Partial<User>) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
   changePassword: (oldP: string, newP: string) => Promise<Result>;
   upsertRoom: (r: Room) => Promise<void>; deleteRoom: (id: string) => Promise<void>;
   upsertPromo: (p: Promo) => Promise<void>; deletePromo: (code: string) => Promise<void>;
@@ -300,6 +301,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+    try {
+      setUser(await api.auth.uploadAvatar(file, { name: user.name, email: user.email, phone: user.phone }));
+    } catch (err) {
+      report(err, 'Gagal mengunggah foto profil.');
+    }
+  };
+
   const changePassword = async (oldP: string, newP: string): Promise<Result> => {
     try {
       await api.auth.changePassword(oldP, newP);
@@ -519,7 +529,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: Store = {
     loading, user, rooms, bookings, promos, reviews, contacts, amenities, saved, blocked, settings, totalGuests,
-    login, register, logout, forgot, resetPassword, updateProfile, changePassword,
+    login, register, logout, forgot, resetPassword, updateProfile, uploadAvatar, changePassword,
     upsertRoom, deleteRoom, upsertPromo, deletePromo, upsertAmenity, deleteAmenity, uploadRoomImage,
     createBooking, updateBooking, cancelBooking, addReview, toggleSaved, isSaved,
     addContact, markContact, deleteContact, toggleBlock, updateSettings,

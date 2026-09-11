@@ -3,6 +3,13 @@ import { Wallet, Clock, BedDouble, Star, TrendingUp, ArrowRight } from 'lucide-r
 import { useStore } from '../../store/AppStore';
 import { formatIDR, fmtDateTime, todayISO } from '../../lib/utils';
 
+const PAY_BADGE: Record<string, string> = {
+  paid: 'bg-emerald-100 text-emerald-700',
+  unpaid: 'bg-amber-100 text-amber-700',
+  refunded: 'bg-sky-100 text-sky-700',
+  failed: 'bg-red-100 text-red-600',
+};
+
 export default function Dashboard() {
   const { bookings, rooms, contacts, totalGuests, reviews } = useStore();
   const paid = bookings.filter((b) => b.payStatus === 'paid' && b.bookStatus !== 'cancelled');
@@ -60,7 +67,7 @@ export default function Dashboard() {
           <div className="flex flex-col gap-2.5 mt-3 max-h-64 overflow-y-auto">
             {[...bookings].slice(0, 5).map((b) => (
               <div key={b.id} className="text-[13px] border-b border-stone-100 pb-2">
-                <p className="font-bold">{b.code} <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${b.payStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{b.payStatus}</span></p>
+                <p className="font-bold">{b.code} <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${PAY_BADGE[b.payStatus] ?? 'bg-stone-100 text-stone-600'}`}>{b.payStatus}</span></p>
                 <p className="text-stone-500">{b.guestName} • {formatIDR(b.total)}</p>
                 <p className="text-[11px] text-stone-400">{fmtDateTime(b.createdAt)}</p>
               </div>

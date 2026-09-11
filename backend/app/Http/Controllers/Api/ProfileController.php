@@ -28,7 +28,7 @@ class ProfileController extends Controller
             $file = $request->file('image');
             $name = \Illuminate\Support\Str::random(20) . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('avatars', $name, 'public');
-            $data['image'] = Storage::url($path);
+            $data['image'] = url(Storage::url($path));
         } else {
             unset($data['image']);
         }

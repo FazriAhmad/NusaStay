@@ -442,6 +442,16 @@ export const api = {
       }),
     updateProfile: (patch: { name: string; email: string; phone: string }) =>
       request<{ user: ApiUser }>('/profile', { method: 'PATCH', body: patch }).then((r) => mapUser(r.user)),
+    // PHP only parses multipart bodies on POST, so the file goes up with _method=PATCH.
+    uploadAvatar: (file: File, current: { name: string; email: string; phone: string }) => {
+      const form = new FormData();
+      form.append('_method', 'PATCH');
+      form.append('name', current.name);
+      form.append('email', current.email);
+      form.append('phone', current.phone);
+      form.append('image', file);
+      return request<{ user: ApiUser }>('/profile', { method: 'POST', form }).then((r) => mapUser(r.user));
+    },
     changePassword: (current_password: string, new_password: string) =>
       request<{ message: string }>('/profile/change-password', {
         method: 'POST',
